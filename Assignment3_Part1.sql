@@ -1,6 +1,7 @@
 DECLARE
-    K_CR CONSTANT CHAR(1) := 'C';
-    K_DR CONSTANT CHAR(1) := 'D';
+    K_CR               CONSTANT CHAR(1) := 'C';
+    K_DR               CONSTANT CHAR(1) := 'D';
+    V_TRANSACTION_FLAG BOOLEAN;
  
     -- cursor for individual transaction
     CURSOR C_TRANSACTIONS IS
@@ -14,6 +15,7 @@ DECLARE
     -- do we add a second cursor for the history? - AN
 BEGIN
     FOR R_TRANSACTIONS IN C_TRANSACTIONS LOOP
+        V_TRANSACTION_FLAG := FALSE;
  
         -- credit transaction
         IF (R_TRANSACTIONS.TRANSACTION_TYPE = K_CR) THEN
@@ -57,15 +59,28 @@ BEGIN
                                                            || ' is not a valid transaction');
         END IF
  -- update history
-        -- need to merge based on TRANSACTION_NO to show properly OR had an IF to check if already exist
-        INSERT INTO TRANSACTION_HISTORY VALUES (
+        UPDATE TRANSACTION_HISTORY
+        SET
+            TRANSACTION_NO,
+            TRANSACTION_DATE,
+            TRANSACTION_DESCRIPTION
+        WHERE
+            TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO
+ -- add if not found
+            IF SQL%ROWCOUNT = 0 THEN V_TRANSACTION_FLAG := TRUE;
+        INSERT INTO TRANSACTION_HISTORY (
+            TRANSACTION_NO,
+            TRANSACTION_DATE,
+            TRANSACTION_DESCRIPTION
+        ) VALUES (
             R_TRANSACTIONS.TRANSACTION_NO,
             R_TRANSACTIONS.TRANSACTION_DATE,
             R_TRANSACTIONS.DESCRIPTION
-        ) END LOOP;
+        ) END IF;
+    END LOOP;
 EXCEPTION
     WHEN OTHERS THEN
-            DBMS_OUTPUT.PUT_LINE('Error: '
-                                 || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('Error: '
+                             || SQLERRM);
 END;
 /
