@@ -11,7 +11,7 @@ DECLARE
 BEGIN
     FOR R_TRANSACTIONS IN C_TRANSACTIONS LOOP
  
-        -- debit transaction
+        -- credit transaction
         IF (R_TRANSACTIONS.TRANSACTION_TYPE = K_CR) THEN
  
             -- insert credit entry
