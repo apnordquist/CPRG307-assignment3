@@ -1,6 +1,8 @@
 DECLARE
     K_CR CONSTANT CHAR(1) := 'C';
     K_DR CONSTANT CHAR(1) := 'D';
+ 
+    -- cursor for individual transaction
     CURSOR C_TRANSACTIONS IS
     SELECT
         *
@@ -8,6 +10,8 @@ DECLARE
         NEW_TRANSACTIONS
     ORDER BY
         TRANSACTION_NO;
+ 
+    -- do we add a second cursor for the history? - AN
 BEGIN
     FOR R_TRANSACTIONS IN C_TRANSACTIONS LOOP
  
@@ -29,7 +33,7 @@ BEGIN
                 R_TRANSACTIONS.DESCRIPTION
             )
  -- adjust account by adding the credit
-            -- need to merge based on TRANSACTION_NO to show properly
+            -- need to merge based on TRANSACTION_NO to show properly had an IF to check if already exist
             UPDATE ACCOUNT SET ACCOUNT_BALANCE = ACCOUNT_BALANCE + R_TRANSACTION.TRANSACTION_AMOUNT WHERE ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
  
             -- debit transaction
@@ -44,7 +48,7 @@ BEGIN
             );
  
             -- update history
-            -- need to merge based on TRANSACTION_NO to show properly
+            -- need to merge based on TRANSACTION_NO to show properly OR had an IF to check if already exist
             INSERT INTO TRANSACTION_HISTORY VALUES (
                 R_TRANSACTIONS.TRANSACTION_NO,
                 R_TRANSACTIONS.TRANSACTION_DATE,
