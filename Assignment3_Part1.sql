@@ -26,15 +26,12 @@ BEGIN
                 R_TRANSACTIONS.TRANSACTION_AMOUNT
             );
  
-            -- update history
-            -- need to merge based on TRANSACTION_NO to show properly had an IF to check if already exist
-            INSERT INTO TRANSACTION_HISTORY VALUES (
-                R_TRANSACTIONS.TRANSACTION_NO,
-                R_TRANSACTIONS.TRANSACTION_DATE,
-                R_TRANSACTIONS.DESCRIPTION
-            )
- -- adjust account by adding the credit
-            UPDATE ACCOUNT SET ACCOUNT_BALANCE = ACCOUNT_BALANCE + R_TRANSACTION.TRANSACTION_AMOUNT WHERE ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
+            -- adjust account by adding the credit
+            UPDATE ACCOUNT
+            SET
+                ACCOUNT_BALANCE = ACCOUNT_BALANCE + R_TRANSACTION.TRANSACTION_AMOUNT
+            WHERE
+                ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
  
             -- debit transaction
         ELSIF (R_TRANSACTIONS.TRANSACTION_TYPE = K_DR) THEN
@@ -47,25 +44,28 @@ BEGIN
                 R_TRANSACTIONS.TRANSACTION_AMOUNT
             );
  
-            -- update history
-            -- need to merge based on TRANSACTION_NO to show properly OR had an IF to check if already exist
-            INSERT INTO TRANSACTION_HISTORY VALUES (
-                R_TRANSACTIONS.TRANSACTION_NO,
-                R_TRANSACTIONS.TRANSACTION_DATE,
-                R_TRANSACTIONS.DESCRIPTION
-            )
- -- adjust account by subtracting the debit
-            UPDATE ACCOUNT SET ACCOUNT_BALANCE = ACCOUNT_BALANCE - R_TRANSACTION.TRANSACTION_AMOUNT WHERE ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
+            -- adjust account by subtracting the debit
+            UPDATE ACCOUNT
+            SET
+                ACCOUNT_BALANCE = ACCOUNT_BALANCE - R_TRANSACTION.TRANSACTION_AMOUNT
+            WHERE
+                ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
  
             -- invalid transaction
         ELSE
             RAISE_APPLICATION_ERROR(-0001, R_TRANSACTIONS, TRANSACTION_TYPE
                                                            || ' is not a valid transaction');
         END IF
-    END LOOP;
+ -- update history
+        -- need to merge based on TRANSACTION_NO to show properly OR had an IF to check if already exist
+        INSERT INTO TRANSACTION_HISTORY VALUES (
+            R_TRANSACTIONS.TRANSACTION_NO,
+            R_TRANSACTIONS.TRANSACTION_DATE,
+            R_TRANSACTIONS.DESCRIPTION
+        ) END LOOP;
 EXCEPTION
     WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Error: '
-                             || SQLERRM);
+            DBMS_OUTPUT.PUT_LINE('Error: '
+                                 || SQLERRM);
 END;
 /
