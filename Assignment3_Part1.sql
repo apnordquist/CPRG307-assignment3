@@ -3,6 +3,7 @@ DECLARE
     K_DR               CONSTANT CHAR(1) := 'D';
     V_TRANSACTION_FLAG BOOLEAN;
 
+    
     V_TRANSACTION_VALID_FLAG BOOLEAN;
  
     -- cursor for individual transaction
@@ -16,14 +17,15 @@ BEGIN
     FOR R_TRANSACTIONS IN C_TRANSACTIONS LOOP
         V_TRANSACTION_FLAG := FALSE;
         V_TRANSACTION_VALID_FLAG := TRUE;
- 
+
+
         -- credit transaction
         IF (R_TRANSACTIONS.TRANSACTION_TYPE = K_CR) THEN
  
             -- insert credit entry
             INSERT INTO TRANSACTION_DETAIL VALUES (
                 R_TRANSACTIONS.ACCOUNT_NO,
-                R_TRANSACTIONS.TRANSACTION_DATE,
+                R_TRANSACTIONS.TRANSACTION_NO,
                 K_CR,
                 R_TRANSACTIONS.TRANSACTION_AMOUNT
             );
@@ -31,17 +33,17 @@ BEGIN
             -- adjust account by adding the credit
             UPDATE ACCOUNT
             SET
-                ACCOUNT_BALANCE = ACCOUNT_BALANCE + R_TRANSACTION.TRANSACTION_AMOUNT
+                ACCOUNT_BALANCE = ACCOUNT_BALANCE + R_TRANSACTIONS.TRANSACTION_AMOUNT
             WHERE
-                ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
+                ACCOUNT_NO = R_TRANSACTIONS.ACCOUNT_NO;
  
         -- debit transaction
         ELSIF (R_TRANSACTIONS.TRANSACTION_TYPE = K_DR) THEN
- 
+
             -- insert debit entry
             INSERT INTO TRANSACTION_DETAIL VALUES (
                 R_TRANSACTIONS.ACCOUNT_NO,
-                R_TRANSACTIONS.TRANSACTION_DATE,
+                R_TRANSACTIONS.TRANSACTION_NO,
                 K_DR,
                 R_TRANSACTIONS.TRANSACTION_AMOUNT
             );
@@ -49,22 +51,22 @@ BEGIN
             -- adjust account by subtracting the debit
             UPDATE ACCOUNT
             SET
-                ACCOUNT_BALANCE = ACCOUNT_BALANCE - R_TRANSACTION.TRANSACTION_AMOUNT
+                ACCOUNT_BALANCE = ACCOUNT_BALANCE - R_TRANSACTIONS.TRANSACTION_AMOUNT
             WHERE
-                ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
+                ACCOUNT_NO = R_TRANSACTIONS.ACCOUNT_NO;
  
         -- invalid transaction
         ELSE
             V_TRANSACTION_VALID_FLAG := FALSE;
-            RAISE_APPLICATION_ERROR(-0001, R_TRANSACTIONS, TRANSACTION_TYPE
-                                                           || ' is not a valid transaction');
+            RAISE_APPLICATION_ERROR(-20001, 'Transaction Type ' || R_TRANSACTIONS.TRANSACTION_TYPE || ' is not a valid transaction');
+
         END IF;
         -- update history
         UPDATE TRANSACTION_HISTORY
         SET
-            TRANSACTION_NO,
-            TRANSACTION_DATE,
-            TRANSACTION_DESCRIPTION
+            TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO,
+            TRANSACTION_DATE = R_TRANSACTIONS.TRANSACTION_DATE,
+            DESCRIPTION = R_TRANSACTIONS.DESCRIPTION
         WHERE
             TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO;
         -- add if not found
@@ -73,7 +75,7 @@ BEGIN
             INSERT INTO TRANSACTION_HISTORY (
                 TRANSACTION_NO,
                 TRANSACTION_DATE,
-                TRANSACTION_DESCRIPTION
+                DESCRIPTION
             ) VALUES (
                 R_TRANSACTIONS.TRANSACTION_NO,
                 R_TRANSACTIONS.TRANSACTION_DATE,
@@ -83,10 +85,11 @@ BEGIN
         END IF;
 
         -- Delete transaction, if correct.
-        If V_TRANSACTION_VALID_FLAG := TRUE 
+        If V_TRANSACTION_VALID_FLAG = TRUE THEN
 
-            DELETE FROM NEW_TRANSACTION 
-            WHERE TRANSACTION_ID = R_TRANSACTIONS.TRANSACTIONS_NO || TRANSACTION_TYPE = R_TRANSACTIONS.TRANSACTION_TYPE;
+            DELETE 
+            FROM NEW_TRANSACTIONS
+            WHERE TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO AND TRANSACTION_TYPE = R_TRANSACTIONS.TRANSACTION_TYPE;
 
         END IF;
     END LOOP;
