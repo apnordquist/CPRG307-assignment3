@@ -2,20 +2,20 @@ DECLARE
     K_CR               CONSTANT CHAR(1) := 'C';
     K_DR               CONSTANT CHAR(1) := 'D';
     V_TRANSACTION_FLAG BOOLEAN;
+
+    V_TRANSACTION_VALID_FLAG BOOLEAN;
  
     -- cursor for individual transaction
     CURSOR C_TRANSACTIONS IS
-    SELECT
-        *
-    FROM
-        NEW_TRANSACTIONS
-    ORDER BY
-        TRANSACTION_NO;
+    SELECT *
+    FROM NEW_TRANSACTIONS
+    ORDER BY TRANSACTION_NO;
  
     -- do we add a second cursor for the history? - AN
 BEGIN
     FOR R_TRANSACTIONS IN C_TRANSACTIONS LOOP
         V_TRANSACTION_FLAG := FALSE;
+        V_TRANSACTION_VALID_FLAG := TRUE;
  
         -- credit transaction
         IF (R_TRANSACTIONS.TRANSACTION_TYPE = K_CR) THEN
@@ -35,7 +35,7 @@ BEGIN
             WHERE
                 ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
  
-            -- debit transaction
+        -- debit transaction
         ELSIF (R_TRANSACTIONS.TRANSACTION_TYPE = K_DR) THEN
  
             -- insert debit entry
@@ -53,34 +53,48 @@ BEGIN
             WHERE
                 ACCOUNT_NO = R_TRANSACTION.ACCOUNT_NO;
  
-            -- invalid transaction
+        -- invalid transaction
         ELSE
+            V_TRANSACTION_VALID_FLAG := FALSE;
             RAISE_APPLICATION_ERROR(-0001, R_TRANSACTIONS, TRANSACTION_TYPE
                                                            || ' is not a valid transaction');
-        END IF
- -- update history
+        END IF;
+        -- update history
         UPDATE TRANSACTION_HISTORY
         SET
             TRANSACTION_NO,
             TRANSACTION_DATE,
             TRANSACTION_DESCRIPTION
         WHERE
-            TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO
- -- add if not found
-            IF SQL%ROWCOUNT = 0 THEN V_TRANSACTION_FLAG := TRUE;
-        INSERT INTO TRANSACTION_HISTORY (
-            TRANSACTION_NO,
-            TRANSACTION_DATE,
-            TRANSACTION_DESCRIPTION
-        ) VALUES (
-            R_TRANSACTIONS.TRANSACTION_NO,
-            R_TRANSACTIONS.TRANSACTION_DATE,
-            R_TRANSACTIONS.DESCRIPTION
-        ) END IF;
+            TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO;
+        -- add if not found
+        IF SQL%ROWCOUNT = 0 THEN V_TRANSACTION_FLAG := TRUE;
+
+            INSERT INTO TRANSACTION_HISTORY (
+                TRANSACTION_NO,
+                TRANSACTION_DATE,
+                TRANSACTION_DESCRIPTION
+            ) VALUES (
+                R_TRANSACTIONS.TRANSACTION_NO,
+                R_TRANSACTIONS.TRANSACTION_DATE,
+                R_TRANSACTIONS.DESCRIPTION
+            ); 
+
+        END IF;
+
+        -- Delete transaction, if correct.
+        If V_TRANSACTION_VALID_FLAG := TRUE 
+
+            DELETE FROM NEW_TRANSACTION 
+            WHERE TRANSACTION_ID = R_TRANSACTIONS.TRANSACTIONS_NO || TRANSACTION_TYPE = R_TRANSACTIONS.TRANSACTION_TYPE;
+
+        END IF;
     END LOOP;
+    COMMIT;
 EXCEPTION
     WHEN OTHERS THEN
         DBMS_OUTPUT.PUT_LINE('Error: '
                              || SQLERRM);
+    ROLLBACK;
 END;
 /
