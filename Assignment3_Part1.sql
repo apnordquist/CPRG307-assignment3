@@ -3,6 +3,8 @@ DECLARE
     K_DR               CONSTANT CHAR(1) := 'D';
     V_TRANSACTION_FLAG BOOLEAN;
 
+    V_TRANSACTION_VALID_FLAG BOOLEAN;
+
     V_TRANSACTION_DEBUG_ROW NEW_TRANSACTIONS%ROWTYPE;
 
     -- cursor for individual transaction
@@ -16,7 +18,7 @@ BEGIN
     FOR R_TRANSACTIONS IN C_TRANSACTIONS LOOP
         V_TRANSACTION_FLAG := FALSE;
         V_TRANSACTION_DEBUG_ROW := R_TRANSACTIONS;
-
+        V_TRANSACTION_VALID_FLAG := FALSE;
 
         -- update history
         UPDATE TRANSACTION_HISTORY
@@ -43,7 +45,7 @@ BEGIN
 
         -- credit transaction
         IF (R_TRANSACTIONS.TRANSACTION_TYPE = K_CR) THEN
- 
+            V_TRANSACTION_VALID_FLAG := TRUE;
             -- insert credit entry
             INSERT INTO TRANSACTION_DETAIL (ACCOUNT_NO, TRANSACTION_NO, TRANSACTION_TYPE, TRANSACTION_AMOUNT) VALUES (
                 R_TRANSACTIONS.ACCOUNT_NO,
@@ -61,7 +63,7 @@ BEGIN
  
         -- debit transaction
         ELSIF (R_TRANSACTIONS.TRANSACTION_TYPE = K_DR) THEN
-
+            V_TRANSACTION_VALID_FLAG := TRUE;
             -- insert debit entry
             INSERT INTO TRANSACTION_DETAIL (ACCOUNT_NO, TRANSACTION_NO, TRANSACTION_TYPE, TRANSACTION_AMOUNT)  VALUES (
                 R_TRANSACTIONS.ACCOUNT_NO,
@@ -85,7 +87,7 @@ BEGIN
         END IF;
         
         -- Delete transaction, if correct.
-        If V_TRANSACTION_FLAG = TRUE THEN
+        If V_TRANSACTION_VALID_FLAG = TRUE THEN
 
             DELETE 
             FROM NEW_TRANSACTIONS
