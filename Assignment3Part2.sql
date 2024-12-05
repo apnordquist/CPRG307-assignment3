@@ -40,6 +40,7 @@ BEGIN
  
 
             --Debits and Credits are not equal
+            -- get debits
             SELECT
                 SUM(TRANSACTION_AMOUNT) INTO V_TRANSACTION_DEBITS
             FROM
@@ -47,6 +48,8 @@ BEGIN
             WHERE
                 TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO
                 AND TRANSACTION_TYPE = K_DR;
+ 
+            -- get credits
             SELECT
                 SUM(TRANSACTION_AMOUNT) INTO V_TRANSACTION_CREDITS
             FROM
@@ -54,7 +57,9 @@ BEGIN
             WHERE
                 TRANSACTION_NO = R_TRANSACTIONS.TRANSACTION_NO
                 AND TRANSACTION_TYPE = K_CR;
-            IF V_TRANSACTION_DEBITS != V_TRANSACTION_CREDITS THEN
+ 
+            -- check balance
+            IF V_TRANSACTION_DEBITS <> V_TRANSACTION_CREDITS THEN
                 V_TRANSACTION_ERROR_MESSAGE := 'Transaction is unbalanced; Credits minus Debits must equal zero.';
                 RAISE E_INVALID_TRANSACTION;
             END IF;
